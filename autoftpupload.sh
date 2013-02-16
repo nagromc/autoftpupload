@@ -35,21 +35,39 @@ files_to_upload () {
 	find "$1" -type f
 }
 
+# remove base path from full path
+# `get_relative_path /home/user/data /home/user` will return data
+get_relative_path () {
+	if [ "$#" -ne 2 ]; then
+		error "get_relative_path needs 2 arguments. $# provided."
+		return 1;
+	fi
+
+	local full_path="$1"
+	local base_path="$2"
+	echo "$full_path" | sed -r "s:^$base_path/?::"
+}
+
 # upload the file and return the exit value of ncftpput
 upload_file () {
 	# remove file name from full path (e.g. /home/user/data/file -> /home/user/data)
-	containing_dir=$(dirname "$1")
-	# remove base folder form full path (e.g. /home/user/data -> /data)
-	relative_remote_home=$(echo "$containing_dir" | sed "s:^$LOCAL_HOME::")
-	ncftpput -V -m -DD -u "$REMOTE_USER" -p "$REMOTE_PASSWORD" "$REMOTE_HOST" "$REMOTE_HOME$relative_remote_home" "$1"
+	local containing_dir="$(dirname "$1")"
+	# remove base folder from full path (e.g. /home/user/data/ -> data)
+	local relative_remote_home="$(get_relative_path "$containing_dir" "$LOCAL_HOME")"
+	ncftpput -V -m -DD -u "$REMOTE_USER" -p "$REMOTE_PASSWORD" "$REMOTE_HOST" "$REMOTE_HOME/$relative_remote_home" "$1"
 	return $?
 }
 
 # remove file directory if empty
 rm_empty_dir () {
-	directory=$(dirname "$1")
-	if [ -z "$(ls -A "$directory")" ] && [ "$directory" != "$LOCAL_HOME" ]; then
-		rmdir "$directory"
+	# remove file name from full path (e.g. /home/user/data/file -> /home/user/data)
+	local containing_dir="$(dirname "$1")"
+	if [ -z "$(ls -A "$containing_dir")" ]; then
+		# remove base folder from full path (e.g. /home/user/data/ -> data)
+		local relative_dir="$(get_relative_path "$containing_dir" "$LOCAL_HOME")"
+		cd "$LOCAL_HOME"
+		rmdir --ignore-fail-on-non-empty -p "$relative_dir"
+		cd -
 	fi
 }
 
@@ -101,7 +119,7 @@ do
 		continue
 	fi
 
-	log "'$newfile' has been successfully transferred."
+	log "Successfully transferred '$newfile'"
 
 	rm_empty_dir "$newfile"
 done
