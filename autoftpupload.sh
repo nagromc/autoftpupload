@@ -85,6 +85,12 @@ fi
 # processing each file found in the local home directory
 files_to_upload "$LOCAL_HOME" | while read newfile
 do
+	if echo "$newfile" | grep -qe "$IGNORED_FOLDER_NAMES_PATTERN"; then
+		log "Skipped '$newfile'"
+		# step to the next file
+		continue
+	fi
+
 	log "Trying to upload '$newfile' to '$REMOTE_HOST:$REMOTE_PORT$REMOTE_HOME'"
 	upload_file "$newfile"
 	r_upload_file=$?
