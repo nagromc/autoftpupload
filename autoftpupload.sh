@@ -32,7 +32,7 @@ error() {
 
 # list the files to be uploaded
 files_to_upload () {
-	find "$1" -type f
+	find "$1" -type f | sort
 }
 
 # remove base path from full path
