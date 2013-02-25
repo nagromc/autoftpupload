@@ -67,7 +67,7 @@ rm_empty_dir () {
 		local relative_dir="$(get_relative_path "$containing_dir" "$LOCAL_HOME")"
 		cd "$LOCAL_HOME"
 		rmdir --ignore-fail-on-non-empty -p "$relative_dir"
-		cd -
+		cd - > /dev/null
 	fi
 }
 
